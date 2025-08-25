@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="h-100">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SPA Demo • Pizza42 • JCR</title>
+
+    <!-- Quickstart styles/libs -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.auth0.com/js/auth0-samples-theme/1.0/css/auth0-theme.min.css"/>
+    <style>
+      .json-box { background:#0b1020; color:#e2e8f0; padding:12px; border-radius:8px; overflow:auto; }
+      .status-box { border:1px solid #e5e7eb; background:#f8fafc; padding:10px; border-radius:6px; }
+      .status-warn { color:#a15c00; }
+      .status-ok { color:#087443; }
+      .status-err { color:#8b0000; }
+      .hidden { display:none !important; }
+    </style>
+
+  </head>
+
+  <body class="h-100">
+    <div id="app" class="h-100 d-flex flex-column">
+      <!-- NAVBAR -->
+      <div class="nav-container">
+        <nav class="navbar navbar-expand-md navbar-light bg-light">
+          <div class="container">
+            <div class="navbar-brand d-flex align-items-center">
+              <img src="logo.jpg" alt="Pizza42 logo" width="28" height="28" class="mr-2"/>
+              <span>Pizza42</span>
+            </div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a href="/" class="nav-link route-link">Home</a></li>
+              </ul>
+              <ul class="navbar-nav">
+                <li class="nav-item auth-invisible">
+                  <button id="btnLogin" class="btn btn-primary btn-margin">Log in</button>
+                </li>
+                <li class="nav-item auth-visible hidden">
+                  <button id="btnLogout" class="btn btn-outline-secondary btn-margin">Log out</button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <!-- MAIN -->
+       
+        <div class="text-center hero"  style="max-width: 100%;">
+          <img src="logo.jpg" alt="Pizza42 logo" style="max-height:120px; opacity:0.9;" class="mb-3"/>
+          <h1 class="mb-4">Auth0 SPA Demo — Pizza42 - JCR :D</h1>
+          <p class="lead">Login, email verification, scope-protected Orders API, + orders in ID Token.</p>
+        </div>
+
+        <div class="card mb-4 mx-auto" style="max-width: 1000px; width: 100%;">
+          <div class="card-body">
+            <h5 class="card-title">Orders (Protected API)</h5>
+            <div class="mb-3">
+              <button id="btnCreate" class="btn btn-sm btn-primary mr-2">Create Order</button>
+              <button id="btnList" class="btn btn-sm btn-outline-primary">List Orders</button>
+            </div>
+
+            <div id="status" class="status-box mb-3">
+              Ready. Click <b>Log in</b> to start.
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <h6>Session &amp; ID Token</h6>
+                <pre id="sessionBox" class="json-box">{ }</pre>
+                <small id="verifyNote" class="text-warning hidden">
+                  <b>Verify email needed</b> — please verify your email to use the Orders API.
+                </small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <h6>API Responses</h6>
+                <pre id="apiBox" class="json-box">{ }</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+    <script>
+      // ==== Config ====
+      const AUTH0_DOMAIN    = "dev-y36uo5tjf58wgosd.us.auth0.com";
+      const AUTH0_CLIENT_ID = "hSEJc385B9Z1akJO09lWmjxijHrRThzT";
+      const API_AUDIENCE    = "https://api.pizza42.jcr";   // Identifier in Auth0
+      const API_BASE        = "http://localhost:3001";     // Your backend URL
+
+      let auth0Client;
+
+      // ==== Helpers ====
+      const $ = (id) => document.getElementById(id);
+      function setStatus(type, msg) {
+        const el = $("status");
+        el.className = "status-box";
+        if (type==="ok") el.classList.add("status-ok");
+        if (type==="warn") el.classList.add("status-warn");
+        if (type==="err") el.classList.add("status-err");
+        el.innerHTML = msg;
+      }
+      function showJson(id, obj) { $(id).textContent = JSON.stringify(obj, null, 2); }
+      function toggleAuthUi(isAuth) {
+        document.querySelectorAll(".auth-visible").forEach(n => n.classList.toggle("hidden", !isAuth));
+        document.querySelectorAll(".auth-invisible").forEach(n => n.classList.toggle("hidden", isAuth));
+      }
+
+      // ==== State ====
+      async function getAuthState() {
+        const isAuth = await auth0Client.isAuthenticated();
+        if (!isAuth) return { isAuth:false, user:null, claims:null, emailVerified:false };
+
+        const [user, claims] = await Promise.all([
+          auth0Client.getUser(),
+          auth0Client.getIdTokenClaims()
+        ]);
+        const emailVerified = claims?.email_verified ?? user?.email_verified ?? false;
+        return { isAuth, user, claims, emailVerified };
+      }
+
+      async function render() {
+        const { isAuth, user, claims, emailVerified } = await getAuthState();
+        toggleAuthUi(isAuth);
+
+        if (!isAuth) {
+          setStatus("warn", "Not logged in. Click <b>Log in</b> to start.");
+          showJson("sessionBox", {});
+          $("verifyNote").classList.add("hidden");
+          return;
+        }
+
+        const ordersClaim = claims?.[API_AUDIENCE + "/orders"] || [];
+        setStatus("ok", "Logged in. If you created an order, the claim may refresh.");
+        showJson("sessionBox", {
+          logged_in_as: user?.email || user?.name,
+          email_verified: emailVerified,
+          orders_from_id_token: ordersClaim
+        });
+        $("verifyNote").classList.toggle("hidden", emailVerified);
+      }
+
+      function requireSessionAndEmail(run) {
+        return (async () => {
+          const { isAuth, emailVerified } = await getAuthState();
+          if (!isAuth) return setStatus("err","Requires login. Please click <b>Log in</b> first.");
+          if (!emailVerified) return setStatus("err","Verify email needed. Please verify first.");
+          return run();
+        })();
+      }
+
+      // ==== Auth handlers ====
+      async function login() {
+        setStatus("warn", "Redirecting to Universal Login…");
+        await auth0Client.loginWithRedirect();
+      }
+      function logout() {
+        setStatus("warn", "Logging out…");
+        auth0Client.logout({ logoutParams: { returnTo: window.location.origin } });
+      }
+
+      // ==== Boot ====
+      (async () => {
+        auth0Client = await auth0.createAuth0Client({
+          domain: AUTH0_DOMAIN,
+          clientId: AUTH0_CLIENT_ID,
+          authorizationParams: {
+            audience: API_AUDIENCE,
+            scope: "openid profile email create:orders read:orders",
+            redirect_uri: window.location.origin
+          }
+        });
+
+        if (location.search.includes("code=") && location.search.includes("state=")) {
+          await auth0Client.handleRedirectCallback();
+          history.replaceState({}, document.title, "/");
+        }
+
+        await render();
+
+        $("btnLogin").onclick = login;
+        $("btnLogout").onclick = logout;
+
+        $("btnCreate").onclick = () => requireSessionAndEmail(async () => {
+          try {
+            const token = await auth0Client.getTokenSilently({
+              authorizationParams: { audience: API_AUDIENCE, scope: "create:orders" }
+            });
+            const resp = await fetch(`${API_BASE}/orders`, {
+              method:"POST",
+              headers:{ "Authorization":`Bearer ${token}`,"Content-Type":"application/json" },
+              body: JSON.stringify({ items:[{id:"pepperoni",qty:1}], total:22.5, address:"123 Pizza St" })
+            });
+            const data = await resp.json();
+            setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);
+            showJson("apiBox",{ status:resp.status, data });
+            await render(); // refresh claims
+          } catch(e) {
+            setStatus("err","Could not reach API."); showJson("apiBox",{error:e.message});
+          }
+        });
+
+        $("btnList").onclick = () => requireSessionAndEmail(async () => {
+          try {
+            const token = await auth0Client.getTokenSilently({
+              authorizationParams: { audience: API_AUDIENCE, scope: "read:orders" }
+            });
+            const resp = await fetch(`${API_BASE}/orders`, { headers:{ "Authorization":`Bearer ${token}` }});
+            const data = await resp.json();
+            setStatus(resp.ok ? "ok" : "err", resp.ok ? "Fetched orders ✅" : `API error (${resp.status})`);
+            showJson("apiBox",{ status:resp.status, data });
+          } catch(e) {
+            setStatus("err","Could not fetch orders."); showJson("apiBox",{error:e.message});
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
