@@ -73,7 +73,7 @@ npx serve -s -l 5173   # or any static server
 ```
 Open http://localhost:5173
 
-### ☁️ Deployment
+## ☁️ Deployment
 
 Frontend (SPA): Deployed on Vercel
 👉 https://pizza42-spa-<something>.vercel.app
@@ -87,7 +87,7 @@ http://localhost:5173
 
 https://pizza42-spa-<something>.vercel.app
 
-### 🔒 Auth0 Setup
+## 🔒 Auth0 Setup
 
 Applications → Applications
 
@@ -113,7 +113,7 @@ Actions
 
 Post-Login Action adds custom claim https://api.pizza42.jcr/orders
 
-### 🧪 Demo Scenarios
+## 🧪 Demo Scenarios
 
 Sign up with email/password
 
@@ -135,7 +135,7 @@ Login with Google
 
 Skips verification (email_verified=true).
 
-### 📝 Notes
+## 📝 Notes
 
 This project is for demo purposes.
 
