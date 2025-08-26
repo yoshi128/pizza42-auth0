@@ -18,22 +18,28 @@ pizza42/
 ```
 
 ---
-
 ## ✅ Features Implemented
 
-- **Universal Login** with:
-  - Email/Password (Database connection)
-  - Social login (Google)
-  - Passkeys (WebAuthn) enabled
-- **Sign up** option for new customers
-- **Authorization Code Flow + PKCE** for the SPA
-- **Protected API** (`/orders`) with:
-  - JWT validation (RS256, issuer, audience)
-  - Scope enforcement (`create:orders`, `read:orders`)
-  - Email verification required before creating orders
-- **Order persistence** in Auth0 `app_metadata` using the **Management API**
-- **Custom ID Token claim** with order history (via Post-Login Action)
-- **CORS** restricted to frontend origins
+### 🔐 Authentication (via Auth0)
+- Universal Login with:
+  - Email/Password (Database Connection) ✅ Auth0 DB connection
+  - Social login (Google) ✅ Auth0 Social Connection
+  - Passkeys (WebAuthn) enabled ✅ Auth0 WebAuthn (passkeys) support
+- Sign up option for new customers (enabled in Auth0 Universal Login)
+- Authorization Code Flow + PKCE for the SPA ✅ Auth0 best practice for SPAs
+
+### 🔒 API Protection
+- Protected API endpoint (`/orders`) with:
+  - JWT validation (RS256, issuer, audience) ✅ Auth0-provided JWKS
+  - Scope enforcement (`create:orders`, `read:orders`) ✅ Auth0 Access Token scopes
+- Email verification required before creating orders ✅ Auth0 rule/enforcement
+
+### 📦 Business Logic (Auth0 Extensions)
+- Order persistence in **Auth0 `app_metadata`** using the Management API ✅ Auth0 Management API
+- Custom ID Token claim with order history (via **Post-Login Action**) ✅ Auth0 Actions
+
+### 🌐 Security
+- CORS restricted to frontend origins (configured in Auth0 Application settings)
 
 ---
 
