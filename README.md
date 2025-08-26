@@ -166,8 +166,9 @@ Deployment uses free tiers of Vercel (SPA) and Render (API).
 👨‍💻 Built by Jorge Camacho Reyes as part of the CIAM Specialist Tech Challenge.
 
 
+***************************************
 
-Pizza42 • Auth0 CIAM PoC (SPA + API)
+## Pizza42 • Auth0 CIAM PoC (SPA + API)
 
 A small, production-style proof of concept that demonstrates how Pizza42 could use Okta’s Auth0 for customer identity:
 
