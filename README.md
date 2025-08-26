@@ -1,6 +1,6 @@
 # 🍕 Pizza42 - CIAM PoC with Auth0
 
-This repository contains a **proof of concept** for Pizza42’s, built with **Auth0 by Okta**.  
+This repository contains a proof of concept for Pizza42’s, built with **Auth0 by Okta**.  
 It demonstrates secure login, social login, passkeys option, calling a protected API, enforcing verified emails, and enriching ID tokens with custom claims.
 
 ---
@@ -48,11 +48,11 @@ pizza42/
 ### 1. Clone repo
 ```bash
 git clone https://github.com/yoshi128/pizza42-auth0.git
-cd pizza42
+cd pizza42-auth0
 ```
 ### 2. Backend (pizza42-api)
 ```bash
-cd pizza42-api
+cd api
 cp .env.example .env   # fill with your Auth0 values
 npm install
 npm run dev            # starts on http://localhost:3001
@@ -68,7 +68,7 @@ CORS_ORIGINS=http://localhost:5173
 ```
 ### 3. Frontend (pizza42-spa)
 ```bash
-cd ../pizza42-spa
+cd ../spa
 npx serve -s -l 5173   # or any static server
 ```
 Open http://localhost:5173
@@ -76,16 +76,16 @@ Open http://localhost:5173
 ## ☁️ Deployment
 
 Frontend (SPA): Deployed on Vercel
-👉 https://NAME.vercel.app
+👉 https://pizza42-auth0-jcr.vercel.app/
 
 Backend (API): Deployed on Render
-👉 https://NAME.onrender.com
+👉 https://pizza42-auth0-jcr.onrender.com
 
 Auth0 Application settings include both localhost and Vercel domain in Allowed Callback URLs, Logout URLs, Web Origins:
 
 http://localhost:5173
 
-https://NAME.vercel.app
+https://pizza42-auth0-jcr.vercel.app/
 
 ## 🔒 Auth0 Setup
 
