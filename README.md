@@ -119,7 +119,27 @@ Sign up with email/password
 
 Login → Sign up → Create order → Rejected (403, email not verified).
 
-Mark email as verified in Dashboard
+Mark email as verified in Dashboard or CLI using:
+Get token
+```bash
+curl --request POST \
+  --url https://dev-xxx.us.auth0.com/oauth/token \
+  --header 'content-type: application/json' \
+  --data '{
+    "client_id":"xxx",
+    "client_secret":"xxx",
+    "audience":"https://dev-xxx.us.auth0.com/api/v2/",
+    "grant_type":"client_credentials"
+  }'
+  ```
+Verify email
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer TOKEN” \
+  -H "Content-Type: application/json" \
+  -d '{"email_verified": true}' \
+  "https://dev-xxx.us.auth0.com/api/v2/users/auth0|ID”
+```
 
 Retry → Order accepted → Stored in app_metadata.
 
