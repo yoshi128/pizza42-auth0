@@ -39,6 +39,9 @@
                 <li class="nav-item auth-visible hidden">
                   <button id="btnLogout" class="btn btn-outline-secondary btn-margin">Log out</button>
                 </li>
+                <li class="nav-item">
+                  <span id="userDisplay" class="nav-link text-muted">no_user</span>
+                </li>
               </ul>
             </div>
           </div>
@@ -130,6 +133,7 @@
           setStatus("warn", "Not logged in. Click <b>Log in</b> to start.");
           showJson("sessionBox", {});
           $("verifyNote").classList.add("hidden");
+          $("userDisplay").textContent = "no_user";
           return;
         }
 
@@ -141,6 +145,8 @@
           orders_from_id_token: ordersClaim
         });
         $("verifyNote").classList.toggle("hidden", emailVerified);
+
+        $("userDisplay").textContent = user?.email || user?.name || "no_user";
       }
 
       function requireSessionAndEmail(run) {
