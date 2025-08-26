@@ -6,7 +6,7 @@ It demonstrates secure login, social login, passkeys option, calling a protected
 ---
 
 ## 📂 Project Structure
-
+```bash
 pizza42/
 ├── pizza42-api/ # Backend (Node/Express API)
 │ ├── server.js
@@ -15,7 +15,7 @@ pizza42/
 │ └── ...
 └── pizza42-spa/ # Frontend (Single Page App)
 └── index.html
-
+```
 
 ---
 
@@ -51,15 +51,15 @@ cp .env.example .env   # fill with your Auth0 values
 npm install
 npm run dev            # starts on http://localhost:3001
 ```
-Environment variables needed:
-
+**Environment variables needed:**
+```bash
 PORT=3001
 AUTH0_DOMAIN=dev-xxxxxx.us.auth0.com
 AUTH0_AUDIENCE=https://api.pizza42.jcr
 MGMT_CLIENT_ID=...
 MGMT_CLIENT_SECRET=...
 CORS_ORIGINS=http://localhost:5173
-
+```
 ### 3. Frontend (pizza42-spa)
 ```bash
 cd ../pizza42-spa
