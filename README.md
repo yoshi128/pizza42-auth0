@@ -47,7 +47,7 @@ pizza42/
 
 ### 1. Clone repo
 ```bash
-git clone https://github.com/<your-username>/pizza42.git
+git clone https://github.com/yoshi128/pizza42-auth0.git
 cd pizza42
 ```
 ### 2. Backend (pizza42-api)
