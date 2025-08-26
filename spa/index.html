@@ -98,13 +98,9 @@
         const cfg = await res.json();
         AUTH0_DOMAIN    = cfg.domain;
         AUTH0_CLIENT_ID = cfg.clientId;
-        API_AUDIENCE    = cfg.audience;
-        API_BASE        = cfg.apiBase;
-}
-      /*const AUTH0_DOMAIN    = "dev-y36uo5tjf58wgosd.us.auth0.com";
-      const AUTH0_CLIENT_ID = "hSEJc385B9Z1akJO09lWmjxijHrRThzT";
-      const API_AUDIENCE    = "https://api.pizza42.jcr";   // Identifier in Auth0
-      const API_BASE        = "http://localhost:3001";     // API URL*/
+        API_AUDIENCE    = cfg.audience; // Identifier in Auth0
+        API_BASE        = cfg.apiBase; // API URL in Render
+      }
 
       // ==== Helpers ====
       const $ = (id) => document.getElementById(id);
