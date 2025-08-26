@@ -2,5 +2,6 @@
   "domain": "dev-y36uo5tjf58wgosd.us.auth0.com",
   "clientId": "hSEJc385B9Z1akJO09lWmjxijHrRThzT",
   "audience": "https://api.pizza42.jcr",
-  "apiBase": "http://localhost:3001"
+  "apiBase": "https://pizza42-auth0-jcr.onrender.com"
+
 }
