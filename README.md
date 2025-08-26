@@ -43,14 +43,14 @@ pizza42/
 ```bash
 git clone https://github.com/<your-username>/pizza42.git
 cd pizza42
-
-2. Backend (pizza42-api)
-
+```
+### 2. Backend (pizza42-api)
+```bash
 cd pizza42-api
 cp .env.example .env   # fill with your Auth0 values
 npm install
 npm run dev            # starts on http://localhost:3001
-
+```
 Environment variables needed:
 
 PORT=3001
@@ -60,14 +60,14 @@ MGMT_CLIENT_ID=...
 MGMT_CLIENT_SECRET=...
 CORS_ORIGINS=http://localhost:5173
 
-3. Frontend (pizza42-spa)
-
+### 3. Frontend (pizza42-spa)
+```bash
 cd ../pizza42-spa
 npx serve -s -l 5173   # or any static server
-
+```
 Open http://localhost:5173
 
-☁️ Deployment
+### ☁️ Deployment
 
 Frontend (SPA): Deployed on Vercel
 👉 https://pizza42-spa-<something>.vercel.app
@@ -81,7 +81,7 @@ http://localhost:5173
 
 https://pizza42-spa-<something>.vercel.app
 
-🔒 Auth0 Setup
+### 🔒 Auth0 Setup
 
 Applications → Applications
 
@@ -107,7 +107,7 @@ Actions
 
 Post-Login Action adds custom claim https://api.pizza42.jcr/orders
 
-🧪 Demo Scenarios
+### 🧪 Demo Scenarios
 
 Sign up with email/password
 
@@ -129,7 +129,7 @@ Login with Google
 
 Skips verification (email_verified=true).
 
-📝 Notes
+### 📝 Notes
 
 This project is for demo purposes.
 
