@@ -8,16 +8,17 @@ It demonstrates secure login, social login, passkeys option, calling a protected
 ## 📂 Project Structure
 ```bash
 pizza42/
-├── pizza42-api/ # Backend (Node/Express API)
+├── api/ # Backend (Node/Express API)
 │ ├── server.js
 │ ├── package.json
 │ ├── .env.example # Environment variables (sample, no secrets)
 │ └── ...
-└── pizza42-spa/ # Frontend (Single Page App)
-└── index.html
+└── spa/ # Frontend (Single Page App)
+│ ├── images
+│ ├── index.html
+│ ├── auth_config.json
 ```
 
----
 ## ✅ Features Implemented
 
 ### 🔐 Authentication (via Auth0)
