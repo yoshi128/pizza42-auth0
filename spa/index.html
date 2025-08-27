@@ -29,12 +29,12 @@
       .status-err { color:#8b0000; }
       .hidden { display:none !important; }
 
-      /* Catálogo */
+      /* Catalog */
       .card-product { border:none; box-shadow:0 8px 24px rgba(0,0,0,.06); border-radius:14px; }
       .card-product img { border-top-left-radius:14px; border-top-right-radius:14px; object-fit:cover; height:170px; width:100%; }
       .price { font-weight:700; }
 
-      /* Carrito fijo en desktop */
+      /* Cart */
       @media (min-width: 992px) { .cart-sticky { position:sticky; top:24px; } }
 
       .badge-scope { font-size:.75rem; }
@@ -50,7 +50,7 @@
         <nav class="navbar navbar-expand-md navbar-light bg-light">
           <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#">
-              <img src="logo.jpg" alt="Pizza42 logo"/>
+              <img src="./images/logo.jpg" alt="Pizza42 logo"/>
               <span>Pizza42</span>
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
@@ -205,10 +205,10 @@
 
       // ==== Pizza Catalog ====
       const CATALOG = [
-        { id:"pepperoni",  name:"Pepperoni",  desc:"Pepperoni, mozzarella, marinara", price: 12.50, img:"pepperoni.jpg" },
-        { id:"margherita", name:"Margherita", desc:"Tomato, mozzarella, basil",        price: 11.00, img:"margherita.jpg" },
-        { id:"hawaiian",   name:"Hawaiian",   desc:"Ham, pineapple, mozzarella",       price: 13.00, img:"hawaiian.jpg" },
-        { id:"veggie",     name:"Veggie",     desc:"Peppers, mushrooms, olives",       price: 12.00, img:"veggie.jpg" }
+        { id:"pepperoni",  name:"Pepperoni",  desc:"Pepperoni, mozzarella, marinara", price: 12.50, img:"./images/pepperoni.jpg" },
+        { id:"margherita", name:"Margherita", desc:"Tomato, mozzarella, basil",        price: 11.00, img:"./images/margherita.jpg" },
+        { id:"hawaiian",   name:"Hawaiian",   desc:"Ham, pineapple, mozzarella",       price: 13.00, img:"./images/hawaiian.jpg" },
+        { id:"veggie",     name:"Veggie",     desc:"Peppers, mushrooms, olives",       price: 12.00, img:"./images/veggie.jpg" }
       ];
 
       function renderCatalog(){
