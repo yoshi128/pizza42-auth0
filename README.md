@@ -1,46 +1,76 @@
 # 🍕 Pizza42 - CIAM PoC with Auth0
 
 This repository contains a proof of concept for Pizza42’s, built with **Auth0 by Okta**.  
-It demonstrates secure login, social login, passkeys option, calling a protected API, enforcing verified emails, and enriching ID tokens with custom claims.
+It demonstrates universal login (DB, Social, Passkeys), RBAC-secured API calls, verified email enforcement, and a custom ID-token claim containing a snapshot of recent orders.
 
 ---
+## ☁️ Deployment
 
-## 📂 Project Structure
-```bash
-pizza42/
-├── api/ # Backend (Node/Express API)
-│ ├── server.js
-│ ├── package.json
-│ ├── .env.example # Environment variables (sample, no secrets)
-│ └── ...
-└── spa/ # Frontend (Single Page App)
-│ ├── images
-│ ├── index.html
-│ ├── auth_config.json
-```
+Frontend (SPA): Deployed on Vercel
+👉 https://pizza42-auth0-jcr.vercel.app/
+
+Backend (API): Deployed on Render
+👉 https://pizza42-auth0-jcr.onrender.com
+
+Auth0 Application settings include both localhost and Vercel domain in Allowed Callback URLs, Logout URLs, Web Origins.
+
+---
 
 ## ✅ Features Implemented
 
 ### 🔐 Authentication (via Auth0)
 - Universal Login with:
-  - Email/Password (Database Connection) ✅ Auth0 DB connection
-  - Social login (Google) ✅ Auth0 Social Connection
-  - Passkeys (WebAuthn) enabled ✅ Auth0 WebAuthn (passkeys) support
+  - Email/Password (Database Connection)
+  - Social login (Google)
+  - Passkeys (WebAuthn) enabled
 - Sign up option for new customers (enabled in Auth0 Universal Login)
 - Authorization Code Flow + PKCE for the SPA (best practice for SPAs)
 
 ### 🔒 API Protection
-- Protected API endpoint (`/orders`) with:
-  - JWT validation (RS256, issuer, audience) ✅ Auth0-provided JWKS
-  - Scope enforcement (`create:orders`, `read:orders`) ✅ Auth0 Access Token scopes
-- Email verification required before creating orders ✅ Auth0 rule/enforcement
+- Protected API endpoint (`/orders`,`/orders/summary`) with:
+  - JWT validation (RS256, issuer, audience)
+  - Scope enforcement (`create:orders`, `read:orders`, `read:orders_summary`)
+- Email verification required before creating orders
 
 ### 📦 Business Logic (Auth0 Extensions)
-- Order persistence in **Auth0 `app_metadata`** using the Management API ✅ Auth0 Management API
-- Custom ID Token claim with order history (via **Post-Login Action**) ✅ Auth0 Actions
+- Order persistence in PostgreSQL (users, orders tables)
+- Custom ID Token claim with order history (via **Post-Login Action**)
+- Default role auto-assignment: a Post-Login Action assigns role pizza42-user (so users get create:orders/read:orders scopes)
 
 ### 🌐 Security
-- CORS restricted to frontend origins (configured in Auth0 Application settings)
+- CORS restricted to frontend origins (configured via CORS_ORIGINS and Auth0 Allowed Web Origins)
+
+---
+
+## 🔒 Auth0 Setup
+
+**Applications → Applications**
+
+- pizza42-spa (Single Page Application)
+- pizza42-api-m2m (Machine to Machine for Management API)
+
+**Applications → APIs**
+
+- Pizza42 Orders API
+  - Identifier / Audience: https://api.pizza42 (example – https://api.pizza42.jcr)
+  - Enable RBAC
+  - Add Permissions in the Access Token
+  - Scopes:
+    - create:orders
+    - read:orders
+    - read:orders_summary (for Action → /orders/summary)
+
+**Authentication**
+
+- Database (Username/Password)
+- Social: Google
+- Passkeys (WebAuthn)
+
+**Actions (Post-Login)**
+
+- AddOrdersToIdToken — populate the ID token with a DB snapshot
+- AddDefaultRole — auto-assigns default role pizza42-user
+Then add a flow in Actions -> Triggers -> post-login, include the actions in your flow
 
 ---
 
@@ -65,67 +95,41 @@ AUTH0_DOMAIN=dev-xxxxxx.us.auth0.com
 AUTH0_AUDIENCE=...
 MGMT_CLIENT_ID=...
 MGMT_CLIENT_SECRET=...
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=http://localhost:8080,https://pizza42-auth0-jcr.vercel.app
 ```
 ### 3. Frontend (pizza42-spa)
 ```bash
 cd ../spa
-npx serve -s -l 5173   # or any static server
+npx serve -s -l 8000   # or any static server
 ```
-Open http://localhost:5173
+Open http://localhost:8000
 
-## ☁️ Deployment
+---
 
-Frontend (SPA): Deployed on Vercel
-👉 https://pizza42-auth0-jcr.vercel.app/
-
-Backend (API): Deployed on Render
-👉 https://pizza42-auth0-jcr.onrender.com
-
-Auth0 Application settings include both localhost and Vercel domain in Allowed Callback URLs, Logout URLs, Web Origins:
-
-http://localhost:5173
-
-https://pizza42-auth0-jcr.vercel.app/
-
-## 🔒 Auth0 Setup
-
-**Applications → Applications**
-
-- pizza42-spa (Single Page Application)
-- pizza42-api-m2m (Machine to Machine for Management API)
-
-**Applications → APIs**
-
-- Pizza42 Orders API with audience https://AUDIENCE ie api.pizza42
-- Scopes: create:orders, read:orders
-
-**Authentication**
-
-- Database (Username/Password)
-- Social: Google
-- Passkeys (WebAuthn)
-
-**Actions**
-
-- Post-Login Action adds custom claim https://AUDIENCE/orders
-Add in Auth0: Actions -> Library - > Create Custom Action:
+## 📂 Project Structure
 ```bash
-exports.onExecutePostLogin = async (event, api) => {
-  const orders = (event.user.app_metadata && event.user.app_metadata.orders) || [];
-  api.idToken.setCustomClaim(`${event.request.audience}/orders`, orders);
-};
+pizza42/
+├── api/ # Backend (Node/Express API)
+│ ├── server.js
+│ ├── package.json
+│ ├── .env.example # Environment variables (sample, no secrets)
+│ └── ...
+└── spa/ # Frontend (Single Page App)
+│ ├── images
+│ ├── index.html
+│ ├── auth_config.json
 ```
-Then add a flow in Actions -> Triggers -> post-login, include the action in your flow
+---
 
 ## 🧪 Demo Scenarios
 
 - Sign up with email/password → try to create order → blocked until email verified
-- Verify email → retry → order accepted → persisted in app_metadata
-- List orders → history returned from API
-- Orders claim in ID Token → visible in Session box in SPA
+- Verify email → retry → order accepted → persisted in PostgreSQL
+- List orders → history returned from API → reads from PostgreSQL
+- Orders claim in ID Token → Post-Login Action calls /orders/summary (M2M) → snapshot visible in Session box in SPA
 - Login with Google → skips verification (email_verified=true)
 - Optional: show Passkey login flow
+- First login (no role) → AddDefaultRole Action auto-assigns pizza42-user → scopes (create:orders, read:orders) work
 
 Note: Mark email as verified in Email provider or CLI using:
 Get token
@@ -149,11 +153,23 @@ curl -X PATCH \
   "https://dev-xxx.us.auth0.com/api/v2/users/auth0|ID”
 ```
 
+---
+
 ## Troubleshooting
+| Symptom                  | Likely Cause               | What to check                                                                                           |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 403 `insufficient_scope` | Missing role or bad scopes | User has role `pizza42-user`? API RBAC enabled? SPA requested scopes (`create:orders` / `read:orders`)? |
+| 401 `invalid_token`      | Audience/issuer mismatch   | `AUTH0_AUDIENCE` matches API identifier; SPA requests tokens with that audience                         |
+| 403 `Email not verified` | User not verified          | Verify user (email provider or Management API). Check API logs                                          |
+| CORS blocked             | Origins not whitelisted    | `CORS_ORIGINS` (API) and **Allowed Web Origins** (Auth0 App) contain your SPA URL(s)                    |
+| 500 from API             | Unhandled error            | Ensure the Express error handler above is present; check Render logs                                    |
+
 - 401/403 from API → Check scopes (create:orders, read:orders) and audience match
 - CORS error → Add SPA origin in CORS_ORIGINS (API) and Allowed Web Origins (Auth0)
 - Email not verified → Verify email before POST /orders
 - Orders claim missing → Ensure Action is attached and token refreshed
+
+---
 
 ## 📝 Notes
 
