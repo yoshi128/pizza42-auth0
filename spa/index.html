@@ -323,7 +323,7 @@
           setStatus("warn", "Not logged in. Click <b>Log in</b> to start.");
           showJson("sessionBox", {});
           $id("verifyNote").classList.add("hidden");
-          $id("userDisplay").textContent = "no_user";
+          $id("userDisplay").textContent = "Not Logged In";
           return;
         }
 
@@ -335,7 +335,7 @@
           orders_snapshot_from_id_token: ordersClaim
         });
         $id("verifyNote").classList.toggle("hidden", emailVerified);
-        $id("userDisplay").textContent = user?.email || user?.name || "no_user";
+        $id("userDisplay").textContent = user?.email || user?.name || "Not Logged In";
       }
 
       // ==== Auth handlers ====
