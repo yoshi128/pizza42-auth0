@@ -56,7 +56,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }, // Render/Neon/Supabase suelen requerir SSL
 });
 
-// Crea tablas si no existen
+// Creates tables if they don't exist
 async function initSchema() {
   const ddl = `
   CREATE TABLE IF NOT EXISTS users (
@@ -150,37 +150,38 @@ app.post(
   checkJwt,
   requiredScopes("create:orders"),
   requireVerifiedEmail,
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const sub = req.auth.payload.sub;
       const email = req.auth.payload.email || null;
       const userId = await ensureUser(sub, email);
 
       const { items, total, address } = req.body || {};
-      if (!Array.isArray(items) || typeof total !== "number") {
+      if (!Array.isArray(items) || !Number.isFinite(total)) {
         return res.status(400).json({ error: "Invalid body. Expect {items:[], total:number, address?}" });
       }
 
-      const ins = await pool.query(
-        `INSERT INTO orders (user_id, items, total, address)
-         VALUES ($1,$2,$3,$4)
-         RETURNING id, created_at`,
-        [userId, items, total, address || null]
-      );
+      const q = `
+        INSERT INTO orders (user_id, items, total, address)
+        VALUES ($1, $2::jsonb, $3::numeric, $4)
+        RETURNING id, created_at
+      `;
+      const params = [userId, JSON.stringify(items), total, address || null];
 
-      res.status(201).json({
-        id: ins.rows[0].id,
-        created_at: ins.rows[0].created_at,
+      const { rows } = await pool.query(q, params);
+      return res.status(201).json({
+        id: rows[0].id,
+        created_at: rows[0].created_at,
         items,
         total,
-        address: address || null,
+        address: address || null
       });
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: "Could not save order." });
+      next(e); // let the error handler below format it
     }
   }
 );
+
 
 /**
  * GET /orders
