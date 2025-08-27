@@ -1,12 +1,11 @@
 // server.js
-// Node ESM (asegúrate de tener "type":"module" en package.json)
 
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pg from "pg";
 import { auth, requiredScopes } from "express-oauth2-jwt-bearer";
-import axios from "axios"; // solo para verificación de email vía Management API (opcional)
+import axios from "axios"; // email verification vía Management API
 
 dotenv.config();
 
@@ -16,7 +15,6 @@ const {
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
   DATABASE_URL,
-  // Opcional (solo si quieres reforzar email_verified consultando Management API)
   MGMT_CLIENT_ID,
   MGMT_CLIENT_SECRET,
 } = process.env;
@@ -25,7 +23,7 @@ const {
 const app = express();
 app.use(express.json());
 
-// CORS por lista blanca
+// CORS, allowed origins
 const origins = CORS_ORIGINS.split(",").map(s => s.trim()).filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
@@ -53,7 +51,7 @@ if (!DATABASE_URL) {
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Render/Neon/Supabase suelen requerir SSL
+  ssl: { rejectUnauthorized: false },
 });
 
 // Creates tables if they don't exist
@@ -89,7 +87,7 @@ async function ensureUser(auth0Sub, email) {
 
 // ---------- Email verification (policy) ----------
 async function isEmailVerifiedViaMgmtApi(sub) {
-  if (!MGMT_CLIENT_ID || !MGMT_CLIENT_SECRET) return null; // no disponible
+  if (!MGMT_CLIENT_ID || !MGMT_CLIENT_SECRET) return null;
   try {
     const { data: token } = await axios.post(`https://${AUTH0_DOMAIN}/oauth/token`, {
       client_id: MGMT_CLIENT_ID,
@@ -108,12 +106,9 @@ async function isEmailVerifiedViaMgmtApi(sub) {
   }
 }
 
-/**
- * requireVerifiedEmail:
- * 1) Intenta usar req.auth.payload.email_verified si viene en el Access Token.
- * 2) Si no está y configuraste MGMT creds, consulta Management API.
- * 3) Si es false/indeterminado, bloquea.
- */
+
+//requireVerifiedEmail:
+
 async function requireVerifiedEmail(req, res, next) {
   try {
     const payload = req.auth?.payload || {};
@@ -133,17 +128,17 @@ async function requireVerifiedEmail(req, res, next) {
   }
 }
 
-// ---------- Rutas ----------
+// ---------- Routes ----------
 app.get("/health", (_, res) => res.json({ ok: true }));
 
 /**
  * POST /orders
- * Requiere:
- *  - JWT válido
+ * Requieres:
+ *  - Valid JWT
  *  - scope create:orders
- *  - email verificado
+ *  - Verified email
  * Body: { items:[{id,qty}], total:number, address?:string }
- * Guarda en BD y devuelve la orden creada.
+ * Saved in external DB.
  */
 app.post(
   "/orders",
@@ -177,7 +172,7 @@ app.post(
         address: address || null
       });
     } catch (e) {
-      next(e); // let the error handler below format it
+      next(e);
     }
   }
 );
@@ -185,10 +180,10 @@ app.post(
 
 /**
  * GET /orders
- * Requiere:
- *  - JWT válido
+ * Requieres:
+ *  - Valid JWT
  *  - scope read:orders
- * Devuelve historial completo del usuario desde BD.
+ * Retunrs user's history from DB.
  */
 app.get("/orders",
   checkJwt,
@@ -217,10 +212,10 @@ app.get("/orders",
 
 /**
  * GET /orders/summary
- * Uso: Auth0 Action Post-Login obtiene snapshot (máx 5) desde BD.
- * Seguridad: JWT + scope 'read:orders_summary' (token de M2M).
+ * Uso: Auth0 Action Post-Login to get snapshot (max 5) from BD.
+ * JWT + scope 'read:orders_summary' (token M2M).
  * Query: ?sub=<auth0_sub>
- * Respuesta: [{ id, total, created_at }, ...]
+ * Returns: [{ id, total, created_at }, ...]
  */
 app.get(
   "/orders/summary",
@@ -228,7 +223,6 @@ app.get(
   requiredScopes("read:orders_summary"),
   async (req, res) => {
     try {
-      // (Opcional) Limitar a tokens de Client Credentials:
       const gty = req.auth?.payload?.gty;
       if (gty && gty !== "client-credentials") {
         return res.status(403).json({ error: "Forbidden" });
@@ -241,7 +235,7 @@ app.get(
         `SELECT id FROM users WHERE auth0_sub = $1`,
         [sub]
       );
-      if (!urows.length) return res.json([]); // sin usuario => no hay órdenes
+      if (!urows.length) return res.json([]);
       const userId = urows[0].id;
 
       const { rows } = await pool.query(

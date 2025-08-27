@@ -85,13 +85,6 @@
           <p class="lead mb-1">
             Secure login, verified email, Orders API, and an order snapshot in the ID Token.
           </p>
-          <!-- <div class="mt-2">
-            <span class="badge badge-info badge-scope">openid</span>
-            <span class="badge badge-info badge-scope">profile</span>
-            <span class="badge badge-info badge-scope">email</span>
-            <span class="badge badge-success badge-scope">read:orders</span>
-            <span class="badge badge-success badge-scope">create:orders</span>
-          </div>-->
         </div>
       </header>
 
@@ -99,7 +92,7 @@
       <main class="py-4">
         <div class="container">
 
-          <!-- Status / acciones API -->
+          <!-- Status / API actions-->
           <div class="mb-3 d-flex flex-wrap justify-content-between align-items-center">
             <div id="status" class="status-box m-0">Ready. Click <b>Log in</b> to start.</div>
             <div class="mt-2 mt-sm-0">
@@ -108,14 +101,13 @@
           </div>
 
           <div class="row">
-            <!-- Catálogo -->
+            <!-- Catalog -->
             <div class="col-lg-8">
               <h4 class="mb-3">Menu</h4>
               <p class="small-muted mb-3">Add some pizzas to your cart and place your order (protected by Auth0).</p>
 
               <div class="row" id="catalog"><!-- JS injects cards --></div>
 
-              <!-- Tabs de depuración -->
               <ul class="nav nav-tabs mt-4" role="tablist">
                 <li class="nav-item">
                   <a class="nav-link active" data-toggle="tab" href="#tabSession" role="tab">Session & ID Token</a>
@@ -153,6 +145,7 @@
                   </div>
                   <hr/>
                   <button id="btnPlaceOrder" class="btn btn-primary btn-block">Place Order</button>
+                  <div id="cartMsg" class="alert d-none mt-2 py-2 px-3" role="alert"></div>
                   <small class="text-muted d-block mt-2">
                     Requires login + verified email.
                   </small>
@@ -201,7 +194,7 @@
         document.querySelectorAll(".auth-invisible").forEach(n => n.classList.toggle("hidden", isAuth));
       }
 
-      // ==== Catálogo estático (demo) ====
+      // ==== Pizza Catalog ====
       const CATALOG = [
         { id:"pepperoni",  name:"Pepperoni",  desc:"Pepperoni, mozzarella, marinara", price: 12.50, img:"pepperoni.jpg" },
         { id:"margherita", name:"Margherita", desc:"Tomato, mozzarella, basil",        price: 11.00, img:"margherita.jpg" },
@@ -238,7 +231,7 @@
         });
       }
 
-      // ==== Carrito (front) ====
+      // ==== Cart (front) ====
       let CART = []; // {id, name, price, qty}
 
       function addToCart(productId){
@@ -328,7 +321,7 @@
         }
 
         const ordersClaim = claims?.[API_AUDIENCE + "/orders"] || [];
-        setStatus("ok", "Logged in. Snapshot claim shows last orders.");
+        setStatus("ok", "Logged in. Start your order!");
         showJson("sessionBox", {
           logged_in_as: user?.email || user?.name,
           email_verified: emailVerified,
@@ -363,9 +356,9 @@
           })
         });
         const data = await resp.json();
+        await renderSession(); // refreshes claims (post login)
         setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);
-        showJson("apiBox",{ status:resp.status, data });
-        await renderSession(); // refresca claims (post login siguiente)
+        showJson("apiBox",{ status:resp.status, data });        
       }
 
       async function apiListOrders() {
@@ -377,7 +370,7 @@
         setStatus(resp.ok ? "ok" : "err", resp.ok ? "Fetched orders ✅" : `API error (${resp.status})`);
         showJson("apiBox",{ status:resp.status, data });
 
-        // pinta lista amigable
+        // prints order history
         const ul = document.getElementById("ordersList");
         ul.innerHTML = "";
         const orders = Array.isArray(data?.orders) ? data.orders : [];
@@ -423,7 +416,6 @@
 
         await renderSession();
 
-        // Botones navbar / acciones
         $id("btnLogin").onclick = login;
         $id("btnLogout").onclick = logout;
         $id("btnList").onclick = () => requireSessionAndEmail(apiListOrders);
