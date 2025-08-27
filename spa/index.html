@@ -1,46 +1,75 @@
 <!DOCTYPE html>
-<html class="h-100">
+<html class="h-100" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>SPA Demo • Pizza42 • JCR</title>
+    <title>Pizza42 • Auth0 SPA Demo</title>
 
-    <!-- Quickstart styles/libs -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="https://cdn.auth0.com/js/auth0-samples-theme/1.0/css/auth0-theme.min.css"/>
+    <!-- Bootstrap + Auth0 demo theme -->
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <link rel="stylesheet"
+          href="https://cdn.auth0.com/js/auth0-samples-theme/1.0/css/auth0-theme.min.css"/>
+
     <style>
+      :root { --brand:#6c5ce7; }
+      body { min-height:100vh; display:flex; flex-direction:column; }
+      .navbar-brand img { height:28px; width:28px; border-radius:6px; margin-right:8px; }
+
+      .hero {
+        background:
+          radial-gradient(900px 300px at 0% -10%, rgba(108,92,231,.16), transparent 60%),
+          linear-gradient(135deg, rgba(0,209,178,.10), transparent 60%);
+        border-bottom:1px solid rgba(0,0,0,.05);
+      }
+
       .json-box { background:#0b1020; color:#e2e8f0; padding:12px; border-radius:8px; overflow:auto; }
       .status-box { border:1px solid #e5e7eb; background:#f8fafc; padding:10px; border-radius:6px; }
       .status-warn { color:#a15c00; }
       .status-ok { color:#087443; }
       .status-err { color:#8b0000; }
       .hidden { display:none !important; }
-    </style>
 
+      /* Catálogo */
+      .card-product { border:none; box-shadow:0 8px 24px rgba(0,0,0,.06); border-radius:14px; }
+      .card-product img { border-top-left-radius:14px; border-top-right-radius:14px; object-fit:cover; height:170px; width:100%; }
+      .price { font-weight:700; }
+
+      /* Carrito fijo en desktop */
+      @media (min-width: 992px) { .cart-sticky { position:sticky; top:24px; } }
+
+      .badge-scope { font-size:.75rem; }
+      .small-muted { font-size:.875rem; color:#6b7280; }
+    </style>
   </head>
 
   <body class="h-100">
     <div id="app" class="h-100 d-flex flex-column">
+
       <!-- NAVBAR -->
       <div class="nav-container">
         <nav class="navbar navbar-expand-md navbar-light bg-light">
           <div class="container">
-            <div class="navbar-brand d-flex align-items-center">
-              <img src="logo.jpg" alt="Pizza42 logo" width="28" height="28" class="mr-2"/>
+            <a class="navbar-brand d-flex align-items-center" href="#">
+              <img src="logo.jpg" alt="Pizza42 logo"/>
               <span>Pizza42</span>
-            </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
               <ul class="navbar-nav mr-auto">
-                <li class="nav-item"><a href="/" class="nav-link route-link">Home</a></li>
+                <li class="nav-item active"><a href="#" class="nav-link">Home</a></li>
               </ul>
               <ul class="navbar-nav">
+                <li class="nav-item d-flex align-items-center mr-2">
+                  <span id="userDisplay" class="nav-link text-muted small">no_user</span>
+                </li>
                 <li class="nav-item auth-invisible">
                   <button id="btnLogin" class="btn btn-primary btn-margin">Log in</button>
                 </li>
                 <li class="nav-item auth-visible hidden">
                   <button id="btnLogout" class="btn btn-outline-secondary btn-margin">Log out</button>
-                </li>
-                <li class="nav-item">
-                  <span id="userDisplay" class="nav-link text-muted">no_user</span>
                 </li>
               </ul>
             </div>
@@ -48,45 +77,99 @@
         </nav>
       </div>
 
-      <!-- MAIN -->
-       
-        <div class="text-center hero"  style="max-width: 100%;">
-          <img src="logo.jpg" alt="Pizza42 logo" style="max-height:120px; opacity:0.9;" class="mb-3"/>
-          <h1 class="mb-4">Auth0 SPA Demo — Pizza42 - JCR :D</h1>
-          <p class="lead">Login, email verification, scope-protected Orders API, + orders in ID Token.</p>
+      <!-- HERO -->
+      <header class="hero py-5">
+        <div class="container text-center">
+          <img src="logo.jpg" alt="Pizza42 logo" style="max-height:96px; opacity:.95;" class="mb-3"/>
+          <h1 class="mb-2">Pizza42 — Auth0 SPA Demo</h1>
+          <p class="lead mb-1">
+            Secure login, verified email, Orders API, and an order snapshot in the ID Token.
+          </p>
+          <div class="mt-2">
+            <span class="badge badge-info badge-scope">openid</span>
+            <span class="badge badge-info badge-scope">profile</span>
+            <span class="badge badge-info badge-scope">email</span>
+            <span class="badge badge-success badge-scope">read:orders</span>
+            <span class="badge badge-success badge-scope">create:orders</span>
+          </div>
         </div>
+      </header>
 
-        <div class="card mb-4 mx-auto" style="max-width: 1000px; width: 100%;">
-          <div class="card-body">
-            <h5 class="card-title">Orders (Protected API)</h5>
-            <div class="mb-3">
-              <button id="btnCreate" class="btn btn-sm btn-primary mr-2">Create Order</button>
-              <button id="btnList" class="btn btn-sm btn-outline-primary">List Orders</button>
+      <!-- MAIN -->
+      <main class="py-4">
+        <div class="container">
+
+          <!-- Status / acciones API -->
+          <div class="mb-3 d-flex flex-wrap justify-content-between align-items-center">
+            <div id="status" class="status-box m-0">Ready. Click <b>Log in</b> to start.</div>
+            <div class="mt-2 mt-sm-0">
+              <button id="btnList" class="btn btn-sm btn-outline-primary">Order History</button>
             </div>
+          </div>
 
-            <div id="status" class="status-box mb-3">
-              Ready. Click <b>Log in</b> to start.
-            </div>
+          <div class="row">
+            <!-- Catálogo -->
+            <div class="col-lg-8">
+              <h4 class="mb-3">Menu</h4>
+              <p class="small-muted mb-3">Add some pizzas to your cart and place your order (protected by Auth0).</p>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <h6>Session &amp; ID Token</h6>
-                <pre id="sessionBox" class="json-box">{ }</pre>
-                <small id="verifyNote" class="text-warning hidden">
-                  <b>Verify email needed</b> — please verify your email to use the Orders API.
-                </small>
+              <div class="row" id="catalog"><!-- JS injects cards --></div>
+
+              <!-- Tabs de depuración -->
+              <ul class="nav nav-tabs mt-4" role="tablist">
+                <li class="nav-item">
+                  <a class="nav-link active" data-toggle="tab" href="#tabSession" role="tab">Session & ID Token</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#tabApi" role="tab">API Responses</a>
+                </li>
+              </ul>
+              <div class="tab-content">
+                <div id="tabSession" class="tab-pane fade show active p-3">
+                  <pre id="sessionBox" class="json-box">{ }</pre>
+                  <small id="verifyNote" class="text-warning hidden">
+                    <b>Verify email needed</b> — please verify your email to use the Orders API.
+                  </small>
+                </div>
+                <div id="tabApi" class="tab-pane fade p-3">
+                  <pre id="apiBox" class="json-box">{ }</pre>
+                  <ul id="ordersList" class="list-group mt-3"></ul>
+                </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <h6>API Responses</h6>
-                <pre id="apiBox" class="json-box">{ }</pre>
+            </div>
+
+            <!-- Carrito -->
+            <div class="col-lg-4">
+              <div class="card cart-sticky">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-2">
+                    <h5 class="m-0">Your Order</h5>
+                    <span class="ml-2 badge badge-pill badge-secondary" id="cartCount">0</span>
+                  </div>
+                  <ul class="list-group mb-3" id="cartList"></ul>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>Total</strong>
+                    <span id="cartTotal" class="price">$0.00</span>
+                  </div>
+                  <hr/>
+                  <button id="btnPlaceOrder" class="btn btn-primary btn-block">Place Order</button>
+                  <small class="text-muted d-block mt-2">
+                    Requires login + verified email.
+                  </small>
+                </div>
               </div>
             </div>
           </div>
+
         </div>
-      </div>
+      </main>
+    </div>
 
     <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
     <script>
       // ==== Config ====
       let AUTH0_DOMAIN, AUTH0_CLIENT_ID, API_AUDIENCE, API_BASE;
@@ -98,27 +181,119 @@
         const cfg = await res.json();
         AUTH0_DOMAIN    = cfg.domain;
         AUTH0_CLIENT_ID = cfg.clientId;
-        API_AUDIENCE    = cfg.audience; // Identifier in Auth0
-        API_BASE        = cfg.apiBase; // API URL in Render
+        API_AUDIENCE    = cfg.audience;
+        API_BASE        = cfg.apiBase;
       }
 
       // ==== Helpers ====
-      const $ = (id) => document.getElementById(id);
+      const $id = (id) => document.getElementById(id);
       function setStatus(type, msg) {
-        const el = $("status");
+        const el = $id("status");
         el.className = "status-box";
         if (type==="ok") el.classList.add("status-ok");
         if (type==="warn") el.classList.add("status-warn");
         if (type==="err") el.classList.add("status-err");
         el.innerHTML = msg;
       }
-      function showJson(id, obj) { $(id).textContent = JSON.stringify(obj, null, 2); }
+      function showJson(id, obj) { $id(id).textContent = JSON.stringify(obj, null, 2); }
       function toggleAuthUi(isAuth) {
         document.querySelectorAll(".auth-visible").forEach(n => n.classList.toggle("hidden", !isAuth));
         document.querySelectorAll(".auth-invisible").forEach(n => n.classList.toggle("hidden", isAuth));
       }
 
-      // ==== State ====
+      // ==== Catálogo estático (demo) ====
+      const CATALOG = [
+        { id:"pepperoni",  name:"Pepperoni",  desc:"Pepperoni, mozzarella, marinara", price: 12.50, img:"https://images.unsplash.com/photo-1594007654729-407eedc4be65?q=80&w=900&auto=format&fit=crop" },
+        { id:"margherita", name:"Margherita", desc:"Tomato, mozzarella, basil",        price: 11.00, img:"https://images.unsplash.com/photo-1548366086-7f1b15287ef7?q=80&w=900&auto=format&fit=crop" },
+        { id:"hawaiian",   name:"Hawaiian",   desc:"Ham, pineapple, mozzarella",       price: 13.00, img:"https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?q=80&w=900&auto=format&fit=crop" },
+        { id:"veggie",     name:"Veggie",     desc:"Peppers, mushrooms, olives",       price: 12.00, img:"https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=900&auto=format&fit=crop" }
+      ];
+
+      function renderCatalog(){
+        const wrap = $id("catalog");
+        wrap.innerHTML = "";
+        CATALOG.forEach(p => {
+          const col = document.createElement("div");
+          col.className = "col-sm-6 col-xl-4 mb-4";
+          col.innerHTML = `
+            <div class="card card-product h-100">
+              <img src="${p.img}" alt="${p.name}">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-1">${p.name}</h5>
+                <p class="text-muted small mb-2">${p.desc}</p>
+                <div class="d-flex align-items-center mb-3">
+                  <span class="price mr-2">$${p.price.toFixed(2)}</span>
+                </div>
+                <button class="btn btn-outline-primary mt-auto" data-add="${p.id}">
+                  Add to Cart
+                </button>
+              </div>
+            </div>`;
+          wrap.appendChild(col);
+        });
+
+        // Wire "Add to Cart"
+        wrap.querySelectorAll("[data-add]").forEach(btn=>{
+          btn.addEventListener("click", () => addToCart(btn.getAttribute("data-add")));
+        });
+      }
+
+      // ==== Carrito (front) ====
+      let CART = []; // {id, name, price, qty}
+
+      function addToCart(productId){
+        const p = CATALOG.find(x=>x.id===productId);
+        if (!p) return;
+        const idx = CART.findIndex(i=>i.id===p.id);
+        if (idx>=0) CART[idx].qty += 1;
+        else CART.push({ id:p.id, name:p.name, price:p.price, qty:1 });
+        renderCart();
+        setStatus("ok", `Added <b>${p.name}</b> to cart.`);
+      }
+      function removeFromCart(productId){
+        CART = CART.filter(i=>i.id!==productId);
+        renderCart();
+      }
+      function changeQty(productId, delta){
+        const item = CART.find(i=>i.id===productId);
+        if (!item) return;
+        item.qty = Math.max(1, item.qty + delta);
+        renderCart();
+      }
+      function cartTotal(){
+        return CART.reduce((sum,i)=> sum + i.price*i.qty, 0);
+      }
+      function renderCart(){
+        const ul = $id("cartList");
+        ul.innerHTML = "";
+        if (CART.length===0){
+          ul.innerHTML = `<li class="list-group-item text-muted">Your cart is empty.</li>`;
+        } else {
+          CART.forEach(i=>{
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.innerHTML = `
+              <div>
+                <strong>${i.name}</strong>
+                <div class="small text-muted">$${i.price.toFixed(2)} x ${i.qty}</div>
+              </div>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" data-qty="-1" data-id="${i.id}">−</button>
+                <button class="btn btn-outline-secondary disabled">${i.qty}</button>
+                <button class="btn btn-outline-secondary" data-qty="+1" data-id="${i.id}">+</button>
+                <button class="btn btn-outline-danger" data-remove="${i.id}">&times;</button>
+              </div>`;
+            ul.appendChild(li);
+          });
+        }
+        $id("cartTotal").textContent = `$${cartTotal().toFixed(2)}`;
+        $id("cartCount").textContent = String(CART.reduce((n,i)=>n+i.qty,0));
+
+        ul.querySelectorAll("[data-remove]").forEach(b=> b.onclick = ()=> removeFromCart(b.getAttribute("data-remove")));
+        ul.querySelectorAll("[data-qty]").forEach(b=> b.onclick = ()=> changeQty(b.getAttribute("data-id"), b.getAttribute("data-qty")==="+1" ? 1 : -1));
+      }
+
+      // ==== Auth state ====
       async function getAuthState() {
         const isAuth = await auth0Client.isAuthenticated();
         if (!isAuth) return { isAuth:false, user:null, claims:null, emailVerified:false };
@@ -131,30 +306,6 @@
         return { isAuth, user, claims, emailVerified };
       }
 
-      async function render() {
-        const { isAuth, user, claims, emailVerified } = await getAuthState();
-        toggleAuthUi(isAuth);
-
-        if (!isAuth) {
-          setStatus("warn", "Not logged in. Click <b>Log in</b> to start.");
-          showJson("sessionBox", {});
-          $("verifyNote").classList.add("hidden");
-          $("userDisplay").textContent = "no_user";
-          return;
-        }
-
-        const ordersClaim = claims?.[API_AUDIENCE + "/orders"] || [];
-        setStatus("ok", "Logged in. If you created an order, the claim may refresh.");
-        showJson("sessionBox", {
-          logged_in_as: user?.email || user?.name,
-          email_verified: emailVerified,
-          orders_from_id_token: ordersClaim
-        });
-        $("verifyNote").classList.toggle("hidden", emailVerified);
-
-        $("userDisplay").textContent = user?.email || user?.name || "no_user";
-      }
-
       function requireSessionAndEmail(run) {
         return (async () => {
           const { isAuth, emailVerified } = await getAuthState();
@@ -164,18 +315,96 @@
         })();
       }
 
+      async function renderSession() {
+        const { isAuth, user, claims, emailVerified } = await getAuthState();
+        toggleAuthUi(isAuth);
+
+        if (!isAuth) {
+          setStatus("warn", "Not logged in. Click <b>Log in</b> to start.");
+          showJson("sessionBox", {});
+          $id("verifyNote").classList.add("hidden");
+          $id("userDisplay").textContent = "no_user";
+          return;
+        }
+
+        const ordersClaim = claims?.[API_AUDIENCE + "/orders"] || [];
+        setStatus("ok", "Logged in. Snapshot claim shows last orders.");
+        showJson("sessionBox", {
+          logged_in_as: user?.email || user?.name,
+          email_verified: emailVerified,
+          orders_snapshot_from_id_token: ordersClaim
+        });
+        $id("verifyNote").classList.toggle("hidden", emailVerified);
+        $id("userDisplay").textContent = user?.email || user?.name || "no_user";
+      }
+
       // ==== Auth handlers ====
       async function login() {
         setStatus("warn", "Redirecting to Universal Login…");
-        await auth0Client.loginWithRedirect();
+        await auth0Client.loginWithRedirect(); // Authorization Code + PKCE
       }
       function logout() {
         setStatus("warn", "Logging out…");
         auth0Client.logout({ logoutParams: { returnTo: window.location.origin } });
       }
 
+      // ==== API: Place Order / List Orders ====
+      async function apiCreateOrder(items) {
+        const token = await auth0Client.getTokenSilently({
+          authorizationParams: { audience: API_AUDIENCE, scope: "create:orders" }
+        });
+        const resp = await fetch(`${API_BASE}/orders`, {
+          method:"POST",
+          headers:{ "Authorization":`Bearer ${token}`,"Content-Type":"application/json" },
+          body: JSON.stringify({
+            items: items.map(i=>({ id:i.id, qty:i.qty })),
+            total: Number(cartTotal().toFixed(2)),
+            address: "123 Pizza St"
+          })
+        });
+        const data = await resp.json();
+        setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);
+        showJson("apiBox",{ status:resp.status, data });
+        await renderSession(); // refresca claims (post login siguiente)
+      }
+
+      async function apiListOrders() {
+        const token = await auth0Client.getTokenSilently({
+          authorizationParams: { audience: API_AUDIENCE, scope: "read:orders" }
+        });
+        const resp = await fetch(`${API_BASE}/orders`, { headers:{ "Authorization":`Bearer ${token}` }});
+        const data = await resp.json();
+        setStatus(resp.ok ? "ok" : "err", resp.ok ? "Fetched orders ✅" : `API error (${resp.status})`);
+        showJson("apiBox",{ status:resp.status, data });
+
+        // pinta lista amigable
+        const ul = document.getElementById("ordersList");
+        ul.innerHTML = "";
+        const orders = Array.isArray(data?.orders) ? data.orders : [];
+        if (!orders.length) {
+          ul.innerHTML = '<li class="list-group-item text-muted">No past orders yet.</li>';
+        } else {
+          orders.forEach(o=>{
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.innerHTML = `
+              <div>
+                <strong>#${o.id}</strong> — ${new Date(o.created_at).toLocaleString()}
+                <div class="small text-muted">
+                  ${(o.items||[]).map(i=>`${i.id} x${i.qty}`).join(", ")} ${o.address?`— ${o.address}`:""}
+                </div>
+              </div>
+              <span class="badge badge-primary badge-pill">$${Number(o.total).toFixed(2)}</span>`;
+            ul.appendChild(li);
+          });
+        }
+      }
+
       // ==== Boot ====
       (async () => {
+        renderCatalog();
+        renderCart();
+
         await loadConfig();
         auth0Client = await auth0.createAuth0Client({
           domain: AUTH0_DOMAIN,
@@ -192,42 +421,17 @@
           history.replaceState({}, document.title, "/");
         }
 
-        await render();
+        await renderSession();
 
-        $("btnLogin").onclick = login;
-        $("btnLogout").onclick = logout;
-
-        $("btnCreate").onclick = () => requireSessionAndEmail(async () => {
-          try {
-            const token = await auth0Client.getTokenSilently({
-              authorizationParams: { audience: API_AUDIENCE, scope: "create:orders" }
-            });
-            const resp = await fetch(`${API_BASE}/orders`, {
-              method:"POST",
-              headers:{ "Authorization":`Bearer ${token}`,"Content-Type":"application/json" },
-              body: JSON.stringify({ items:[{id:"pepperoni",qty:1}], total:22.5, address:"123 Pizza St" })
-            });
-            const data = await resp.json();
-            setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);
-            showJson("apiBox",{ status:resp.status, data });
-            await render(); // refresh claims
-          } catch(e) {
-            setStatus("err","Could not reach API."); showJson("apiBox",{error:e.message});
-          }
-        });
-
-        $("btnList").onclick = () => requireSessionAndEmail(async () => {
-          try {
-            const token = await auth0Client.getTokenSilently({
-              authorizationParams: { audience: API_AUDIENCE, scope: "read:orders" }
-            });
-            const resp = await fetch(`${API_BASE}/orders`, { headers:{ "Authorization":`Bearer ${token}` }});
-            const data = await resp.json();
-            setStatus(resp.ok ? "ok" : "err", resp.ok ? "Fetched orders ✅" : `API error (${resp.status})`);
-            showJson("apiBox",{ status:resp.status, data });
-          } catch(e) {
-            setStatus("err","Could not fetch orders."); showJson("apiBox",{error:e.message});
-          }
+        // Botones navbar / acciones
+        $id("btnLogin").onclick = login;
+        $id("btnLogout").onclick = logout;
+        $id("btnList").onclick = () => requireSessionAndEmail(apiListOrders);
+        $id("btnPlaceOrder").onclick = () => requireSessionAndEmail(async () => {
+          if (CART.length===0) { setStatus("warn","Your cart is empty."); return; }
+          await apiCreateOrder(CART);
+          CART = [];
+          renderCart();
         });
       })();
     </script>
