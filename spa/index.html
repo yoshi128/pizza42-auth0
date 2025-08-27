@@ -188,6 +188,15 @@
         if (type==="err") el.classList.add("status-err");
         el.innerHTML = msg;
       }
+      function setCartMsg(level, text) {
+        const el = $id("cartMsg");
+        el.className = `alert alert-${level} mt-2 py-2 px-3`; // success | danger | warning
+        el.textContent = text;
+        el.classList.remove("d-none");
+        clearTimeout(setCartMsg._t);
+        setCartMsg._t = setTimeout(() => el.classList.add("d-none"), 4000);
+      }
+
       function showJson(id, obj) { $id(id).textContent = JSON.stringify(obj, null, 2); }
       function toggleAuthUi(isAuth) {
         document.querySelectorAll(".auth-visible").forEach(n => n.classList.toggle("hidden", !isAuth));
@@ -357,7 +366,12 @@
         });
         const data = await resp.json();
         await renderSession(); // refreshes claims (post login)
-        setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);
+        /*setStatus(resp.ok ? "ok" : "err", resp.ok ? "Order created ✅" : `API error (${resp.status})`);*/
+        if (resp.ok) {
+          setCartMsg("success", "Order created ✅");
+        } else {
+          setCartMsg("danger", `API error (${resp.status})`);
+        }
         showJson("apiBox",{ status:resp.status, data });        
       }
 
