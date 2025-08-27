@@ -183,7 +183,7 @@ app.post(
  * Requieres:
  *  - Valid JWT
  *  - scope read:orders
- * Retunrs user's history from DB.
+ * Returns user's history from DB.
  */
 app.get("/orders",
   checkJwt,
