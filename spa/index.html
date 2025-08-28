@@ -404,13 +404,12 @@
         if (!orders.length) {
           ul.innerHTML = '<li class="list-group-item text-muted">No past orders yet.</li>';
         } else {
-          orders.forEach((o, idx){
-            const seq = orders.length - idx;
+          orders.forEach(o=>{
             const li = document.createElement("li");
             li.className = "list-group-item d-flex justify-content-between align-items-center";
             li.innerHTML = `
               <div>
-                <strong>#${seq}</strong> — ${new Date(o.created_at).toLocaleString()}
+                <strong>#${o.id}</strong> — ${new Date(o.created_at).toLocaleString()}
                 <div class="small text-muted">
                   ${(o.items||[]).map(i=>`${i.id} x${i.qty}`).join(", ")} ${o.address?`— ${o.address}`:""}
                 </div>
