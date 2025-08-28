@@ -156,13 +156,13 @@ curl -X PATCH \
 ---
 
 ## Troubleshooting
-| Symptom                  | Likely Cause               | What to check                                                                                           |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 403 `insufficient_scope` | Missing role or bad scopes | User has role `pizza42-user`? API RBAC enabled? SPA requested scopes (`create:orders` / `read:orders`)? |
-| 401 `invalid_token`      | Audience/issuer mismatch   | `AUTH0_AUDIENCE` matches API identifier; SPA requests tokens with that audience                         |
-| 403 `Email not verified` | User not verified          | Verify user (email provider or Management API). Check API logs                                          |
-| CORS blocked             | Origins not whitelisted    | `CORS_ORIGINS` (API) and **Allowed Web Origins** (Auth0 App) contain your SPA URL(s)                    |
-| 500 from API             | Unhandled error            | Ensure the Express error handler above is present; check Render logs                                    |
+| Symptom                    | Likely Cause               | What to check                                                                                           |
+| -------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 403 `insufficient_scope`   | Missing role or bad scopes | User has role `pizza42-user`? API RBAC enabled? SPA requested scopes (`create:orders` / `read:orders`)? |
+| 401 `invalid_token`        | Audience/issuer mismatch   | `AUTH0_AUDIENCE` matches API identifier; SPA requests tokens with that audience                         |
+| 403 `Email not verified`   | User not verified          | Verify user (email provider or Management API). Check API logs                                          |
+| CORS blocked               | Origins not whitelisted    | `CORS_ORIGINS` (API) and **Allowed Web Origins** (Auth0 App) contain your SPA URL(s)                    |
+| 500 from API               | Unhandled error            | Ensure the Express error handler above is present; check Render logs                                    |
 
 - 401/403 from API → Check scopes (create:orders, read:orders) and audience match
 - CORS error → Add SPA origin in CORS_ORIGINS (API) and Allowed Web Origins (Auth0)
