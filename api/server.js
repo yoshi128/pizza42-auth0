@@ -201,7 +201,9 @@ app.get("/orders",
          ORDER BY created_at DESC`,
         [userId]
       );
-
+      res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
       res.json({ orders: rows });
     } catch (e) {
       console.error(e);
