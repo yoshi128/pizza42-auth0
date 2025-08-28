@@ -390,8 +390,7 @@
         const token = await auth0Client.getTokenSilently({
           authorizationParams: { audience: API_AUDIENCE, scope: "read:orders" }
         });
-        const resp = await fetch(`${API_BASE}/orders`, { headers:{ "Authorization":`Bearer ${token}` }});
-        cache: "no-store"
+        const resp = await fetch(`${API_BASE}/orders`, { headers:{ "Authorization":`Bearer ${token}` }, cache: "no-store"});
         const data = await resp.json();
         setStatus(resp.ok ? "ok" : "err", resp.ok ? "Fetched orders ✅" : `API error (${resp.status})`);
         showJson("apiBox",{ status:resp.status, data });
