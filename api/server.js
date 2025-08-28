@@ -214,7 +214,7 @@ app.get("/orders",
 
 /**
  * GET /orders/summary
- * Uso: Auth0 Action Post-Login to get snapshot (max 5) from BD.
+ * Auth0 Action Post-Login to get snapshot (max 5) from BD.
  * JWT + scope 'read:orders_summary' (token M2M).
  * Query: ?sub=<auth0_sub>
  * Returns: [{ id, total, created_at }, ...]
