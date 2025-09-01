@@ -119,7 +119,7 @@ async function isEmailVerifiedViaMgmtApi(sub) {
   }
 }
 
-// Minimal profile enrichment: count + last order summary (not full order body)
+// Update profile: count + last order summary (not full order body)
 async function updateProfileOrderSummary(sub, summary /* {id,total,created_at} */) {
   try {
     const mgmt = await getMgmtToken();
@@ -150,7 +150,6 @@ async function updateProfileOrderSummary(sub, summary /* {id,total,created_at} *
     });
   } catch (e) {
     console.error("profile enrichment failed:", e?.response?.data || e.message);
-    // best-effort — do not fail the request
   }
 }
 
@@ -220,7 +219,7 @@ app.post(
         created_at: rows[0].created_at
       };
 
-      // best-effort minimal enrichment on the profile
+      // Saves to User's profile
       updateProfileOrderSummary(sub, orderSummary).catch(() => {});
 
       return res.status(201).json({
