@@ -5,7 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pg from "pg";
 import { auth, requiredScopes } from "express-oauth2-jwt-bearer";
-import axios from "axios"; // Management API (email check + minimal profile enrichment)
+import axios from "axios"; // Management API (email check)
 
 dotenv.config();
 
@@ -19,7 +19,7 @@ const {
   MGMT_CLIENT_SECRET,
 } = process.env;
 
-// ---------- App & Middleware ----------
+//  App & Middleware 
 const app = express();
 app.use(express.json());
 
@@ -32,7 +32,7 @@ app.use(cors({
   }
 }));
 
-// ---------- JWT Resource Server (RS256) ----------
+//  JWT Resource Server (RS256) 
 if (!AUTH0_DOMAIN || !AUTH0_AUDIENCE) {
   console.error("Missing AUTH0_DOMAIN or AUTH0_AUDIENCE.");
   process.exit(1);
@@ -43,7 +43,7 @@ const checkJwt = auth({
   tokenSigningAlg: "RS256",
 });
 
-// ---------- Postgres ----------
+//  Postgres 
 if (!DATABASE_URL) {
   console.error("Missing DATABASE_URL.");
   process.exit(1);
@@ -51,7 +51,6 @@ if (!DATABASE_URL) {
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  // TLS on; in production prefer validating CA instead of rejectUnauthorized:false
   ssl: { rejectUnauthorized: false },
 });
 
@@ -86,8 +85,8 @@ async function ensureUser(auth0Sub, email) {
   return rows[0].id;
 }
 
-// ---------- Management API helpers ----------
-let mgmtCache = { token: null, exp: 0 }; // simple in-memory cache
+//  Management API helpers 
+let mgmtCache = { token: null, exp: 0 };
 async function getMgmtToken() {
   if (!MGMT_CLIENT_ID || !MGMT_CLIENT_SECRET) {
     throw new Error("Missing MGMT_CLIENT_ID / MGMT_CLIENT_SECRET");
@@ -119,7 +118,7 @@ async function isEmailVerifiedViaMgmtApi(sub) {
   }
 }
 
-// Update profile: count + last order summary (not full order body)
+// Update profile: count + last order summary
 async function updateProfileOrderSummary(sub, summary /* {id,total,created_at} */) {
   try {
     const mgmt = await getMgmtToken();
@@ -153,7 +152,7 @@ async function updateProfileOrderSummary(sub, summary /* {id,total,created_at} *
   }
 }
 
-// ---------- Verified email gate ----------
+//  Verified email gate 
 async function requireVerifiedEmail(req, res, next) {
   try {
     const payload = req.auth?.payload || {};
@@ -177,7 +176,7 @@ async function requireVerifiedEmail(req, res, next) {
   }
 }
 
-// ---------- Routes ----------
+//  Routes 
 app.get("/health", (_, res) => res.json({ ok: true }));
 
 /**
@@ -315,7 +314,7 @@ app.get(
   }
 );
 
-// ---------- Start ----------
+//  Start 
 initSchema()
   .then(() => {
     app.listen(PORT, () => {
