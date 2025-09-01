@@ -5,7 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pg from "pg";
 import { auth, requiredScopes } from "express-oauth2-jwt-bearer";
-import axios from "axios"; // email verification vía Management API
+import axios from "axios"; // Management API (email check + minimal profile enrichment)
 
 dotenv.config();
 
@@ -51,6 +51,7 @@ if (!DATABASE_URL) {
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: DATABASE_URL,
+  // TLS on; in production prefer validating CA instead of rejectUnauthorized:false
   ssl: { rejectUnauthorized: false },
 });
 
@@ -85,19 +86,31 @@ async function ensureUser(auth0Sub, email) {
   return rows[0].id;
 }
 
-// ---------- Email verification (policy) ----------
+// ---------- Management API helpers ----------
+let mgmtCache = { token: null, exp: 0 }; // simple in-memory cache
+async function getMgmtToken() {
+  if (!MGMT_CLIENT_ID || !MGMT_CLIENT_SECRET) {
+    throw new Error("Missing MGMT_CLIENT_ID / MGMT_CLIENT_SECRET");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (mgmtCache.token && mgmtCache.exp - 30 > now) return mgmtCache.token;
+
+  const { data } = await axios.post(`https://${AUTH0_DOMAIN}/oauth/token`, {
+    client_id: MGMT_CLIENT_ID,
+    client_secret: MGMT_CLIENT_SECRET,
+    audience: `https://${AUTH0_DOMAIN}/api/v2/`,
+    grant_type: "client_credentials",
+  });
+  mgmtCache = { token: data.access_token, exp: now + data.expires_in };
+  return mgmtCache.token;
+}
+
 async function isEmailVerifiedViaMgmtApi(sub) {
-  if (!MGMT_CLIENT_ID || !MGMT_CLIENT_SECRET) return null;
   try {
-    const { data: token } = await axios.post(`https://${AUTH0_DOMAIN}/oauth/token`, {
-      client_id: MGMT_CLIENT_ID,
-      client_secret: MGMT_CLIENT_SECRET,
-      audience: `https://${AUTH0_DOMAIN}/api/v2/`,
-      grant_type: "client_credentials",
-    });
+    const mgmt = await getMgmtToken();
     const { data: user } = await axios.get(
       `https://${AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(sub)}`,
-      { headers: { Authorization: `Bearer ${token.access_token}` } }
+      { headers: { Authorization: `Bearer ${mgmt}` } }
     );
     return !!user.email_verified;
   } catch (e) {
@@ -106,18 +119,55 @@ async function isEmailVerifiedViaMgmtApi(sub) {
   }
 }
 
+// Minimal profile enrichment: count + last order summary (not full order body)
+async function updateProfileOrderSummary(sub, summary /* {id,total,created_at} */) {
+  try {
+    const mgmt = await getMgmtToken();
+    const base = `https://${AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(sub)}`;
 
-//requireVerifiedEmail:
+    // read current metadata
+    const { data: user } = await axios.get(base, {
+      headers: { Authorization: `Bearer ${mgmt}` }
+    });
 
+    const meta = user.app_metadata || {};
+    const orders_count = (meta.orders_count || 0) + 1;
+
+    const patch = {
+      app_metadata: {
+        ...meta,
+        orders_count,
+        last_order: {
+          id: summary.id,
+          total: summary.total,
+          created_at: summary.created_at
+        }
+      }
+    };
+
+    await axios.patch(base, patch, {
+      headers: { Authorization: `Bearer ${mgmt}` }
+    });
+  } catch (e) {
+    console.error("profile enrichment failed:", e?.response?.data || e.message);
+    // best-effort — do not fail the request
+  }
+}
+
+// ---------- Verified email gate ----------
 async function requireVerifiedEmail(req, res, next) {
   try {
     const payload = req.auth?.payload || {};
     const sub = payload.sub;
     if (!sub) return res.status(401).json({ error: "Token missing sub" });
 
+    // Fast path: if the token already carries email_verified
     if (payload.email_verified === true) return next();
-    if (payload.email_verified === false) return res.status(403).json({ error: "Email not verified" });
+    if (payload.email_verified === false) {
+      return res.status(403).json({ error: "Email not verified" });
+    }
 
+    // Fallback: call Mgmt API if the claim isn't present
     const verified = await isEmailVerifiedViaMgmtApi(sub);
     if (verified === true) return next();
 
@@ -133,12 +183,12 @@ app.get("/health", (_, res) => res.json({ ok: true }));
 
 /**
  * POST /orders
- * Requieres:
- *  - Valid JWT
+ * Requires:
+ *  - Valid JWT (audience = AUTH0_AUDIENCE)
  *  - scope create:orders
  *  - Verified email
  * Body: { items:[{id,qty}], total:number, address?:string }
- * Saved in external DB.
+ * Saves in Postgres and updates compact profile summary (count + last_order).
  */
 app.post(
   "/orders",
@@ -162,13 +212,20 @@ app.post(
         RETURNING id, created_at
       `;
       const params = [userId, JSON.stringify(items), total, address || null];
-
       const { rows } = await pool.query(q, params);
-      return res.status(201).json({
+
+      const orderSummary = {
         id: rows[0].id,
-        created_at: rows[0].created_at,
-        items,
         total,
+        created_at: rows[0].created_at
+      };
+
+      // best-effort minimal enrichment on the profile
+      updateProfileOrderSummary(sub, orderSummary).catch(() => {});
+
+      return res.status(201).json({
+        ...orderSummary,
+        items,
         address: address || null
       });
     } catch (e) {
@@ -177,15 +234,15 @@ app.post(
   }
 );
 
-
 /**
  * GET /orders
- * Requieres:
+ * Requires:
  *  - Valid JWT
  *  - scope read:orders
  * Returns user's history from DB.
  */
-app.get("/orders",
+app.get(
+  "/orders",
   checkJwt,
   requiredScopes("read:orders"),
   async (req, res) => {
@@ -214,8 +271,10 @@ app.get("/orders",
 
 /**
  * GET /orders/summary
- * Auth0 Action Post-Login to get snapshot (max 5) from BD.
- * JWT + scope 'read:orders_summary' (token M2M).
+ * For Auth0 Post-Login Action to get snapshot (max 5).
+ * Requires:
+ *  - M2M JWT (gty = client-credentials)
+ *  - scope read:orders_summary
  * Query: ?sub=<auth0_sub>
  * Returns: [{ id, total, created_at }, ...]
  */
