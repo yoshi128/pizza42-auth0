@@ -425,7 +425,7 @@
         renderCart();
 
         await loadConfig();
-        auth0Client = await auth0.createAuth0Client({
+        auth0Client = await auth0.createAuth0Client({ //Initializing the SDK
           domain: AUTH0_DOMAIN,
           clientId: AUTH0_CLIENT_ID,
           authorizationParams: {

@@ -104,7 +104,7 @@ async function getMgmtToken() {
   return mgmtCache.token;
 }
 
-async function isEmailVerifiedViaMgmtApi(sub) {
+async function isEmailVerifiedViaMgmtApi(sub) {// In case access token doesn't have "email_verified", this function calls it
   try {
     const mgmt = await getMgmtToken();
     const { data: user } = await axios.get(
