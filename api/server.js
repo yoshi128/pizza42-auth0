@@ -272,7 +272,7 @@ app.get(
  * GET /orders/summary
  * For Auth0 Post-Login Action to get snapshot (max 5).
  * Requires:
- *  - M2M JWT (gty = client-credentials)
+ *  - M2M JWT
  *  - scope read:orders_summary
  * Query: ?sub=<auth0_sub>
  * Returns: [{ id, total, created_at }, ...]
